@@ -286,7 +286,7 @@ footer{background:var(--head);color:var(--head-ink)}
    ===================================================================== */
 const CONFIG = {
   storeName: "Perfect Boutique Mayorista",
-  whatsapp: "573242051482",   // REEMPLAZA con tu número para la presentación (el real de la tienda va en producción)
+  whatsapp: "573000000000",   // REEMPLAZA con tu número para la presentación (el real de la tienda va en producción)
   mayorFrom: 6,               // prendas surtidas desde las que aplica el precio al mayor (confirmar con la tienda)
   imgBase: "img/",            // fotos en img/: CODIGO.jpg o CODIGO-color.jpg, y CODIGO-ficha.jpg para la página del catálogo
   developer: { name:"Diego Villamil", url:"https://diego-villamil.vercel.app" },
@@ -505,10 +505,14 @@ function renderCart(){
   const saved=load(UK,{}); document.querySelectorAll("#cust [name]").forEach(i=>{ i.value=saved[i.name]||""; i.addEventListener("input",()=>{ const o={}; document.querySelectorAll("#cust [name]").forEach(x=>o[x.name]=x.value); store(UK,o); }); });
   $("#send").addEventListener("click", send);
 }
+/* Deja solo dígitos y agrega el indicativo 57 si el número es un celular colombiano de 10 dígitos. */
+function waNumber(n){ let d=String(n||"").replace(/\D/g,""); if(d.length===10 && d.startsWith("3")) d="57"+d; return d.length>=11 ? d : ""; }
 function send(){
   const f={}, miss=[];
   document.querySelectorAll("#cust [name]").forEach(i=>{ f[i.name]=i.value.trim(); if(i.required&&!f[i.name]) miss.push(i); });
-  if(miss.length){ miss[0].focus(); $("#sendHint").textContent="Completa nombre, celular, ciudad y dirección para enviar el pedido."; return; }
+  if(miss.length){ miss.forEach(i=>i.style.borderColor="var(--warn)"); miss[0].scrollIntoView({block:"center",behavior:"smooth"}); miss[0].focus({preventScroll:true}); $("#sendHint").textContent="Completa nombre, celular, ciudad y dirección para enviar el pedido."; return; }
+  const phone = waNumber(CONFIG.whatsapp);
+  if(!phone){ $("#sendHint").textContent="El número de WhatsApp de la tienda no está bien configurado."; return; }
   const m=isMayor();
   const L=[`*Nuevo pedido · Perfect Boutique Mayorista*`,"",`*Cliente:* ${f.nombre}`,`*Celular:* ${f.tel}`,f.doc?`*Cédula/NIT:* ${f.doc}`:null,
     `*Ciudad:* ${f.ciudad}${f.barrio?", "+f.barrio:""}`,`*Dirección:* ${f.dir}`,f.notas?`*Notas:* ${f.notas}`:null,"",`*Productos (precio ${m?"al mayor":"al detal"})*`].filter(x=>x!==null);
@@ -516,7 +520,9 @@ function send(){
     L.push(`${i+1}. ${p.code} · ${p.name} (${g.color})`);
     L.push(`   ${g.sizes.map(l=>`Talla ${l.size} ×${l.qty}`).join(", ")} = ${n} × ${money(unit(p))} = ${money(n*unit(p))}`); });
   L.push("",`*Total prendas:* ${units()}`,`*Total estimado:* ${money(total())}`);
-  window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(L.join("\n"))}`,"_blank","noopener");
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(L.join("\n"))}`;
+  // Navegación directa: funciona en el navegador de Instagram, en iPhone y Android (window.open suele bloquearse).
+  window.location.href = url;
 }
 $("#cBody").addEventListener("click", e=>{ const k=e.target.dataset.rm; if(!k) return; const [c,col]=k.split("|"); cart=cart.filter(l=>!(l.code===c&&l.color===col)); store(CK,cart); renderCart(); renderTier(); });
 
